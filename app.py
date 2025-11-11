@@ -17,8 +17,8 @@ from utils.prompt_library import PromptLibrary
 from pages.article_analysis import render_article_analysis_page
 
 # バージョン情報
-VERSION = "3.0.0"
-VERSION_DATE = "2025-11-10"
+VERSION = "3.0.1"
+VERSION_DATE = "2025-11-11"
 
 # 環境変数読み込み
 load_dotenv()
@@ -67,7 +67,11 @@ with st.sidebar:
 
 # 記事分析＆ネタ展開ページ
 if page == "🔬 記事分析＆ネタ展開":
-    api_key = st.secrets.get('ANTHROPIC_API_KEY') or os.getenv('ANTHROPIC_API_KEY') or st.session_state.get('api_key')
+    # APIキーを取得（Streamlit Cloud対応）
+    try:
+        api_key = st.secrets["ANTHROPIC_API_KEY"]
+    except (KeyError, FileNotFoundError):
+        api_key = os.getenv('ANTHROPIC_API_KEY') or st.session_state.get('api_key')
     render_article_analysis_page(api_key)
 
 # データ分析ページ（削除予定 - 後方互換性のため残す）
@@ -710,8 +714,11 @@ elif page == "🤖 シナリオ生成":
                 for theme, count in top_themes.items():
                     st.write(f"- {theme}: {count}件")
 
-    # API key確認
-    api_key = st.secrets.get('ANTHROPIC_API_KEY') or os.getenv('ANTHROPIC_API_KEY') or st.session_state.get('api_key')
+    # API key確認（Streamlit Cloud対応）
+    try:
+        api_key = st.secrets["ANTHROPIC_API_KEY"]
+    except (KeyError, FileNotFoundError):
+        api_key = os.getenv('ANTHROPIC_API_KEY') or st.session_state.get('api_key')
 
     if not api_key:
         st.warning("⚠️ Anthropic API Keyが設定されていません。「⚙️ 設定」から設定してください。")
@@ -1499,8 +1506,11 @@ elif page == "📝 ネタ管理":
             st.subheader("🤖 AI自動整理 - 未整理メモをカテゴリ分類")
             st.info("**未整理のメモをAIが分析して、自動的に適切なカテゴリに振り分けます！**")
 
-            # API key確認
-            api_key = st.secrets.get('ANTHROPIC_API_KEY') or os.getenv('ANTHROPIC_API_KEY') or st.session_state.get('api_key')
+            # API key確認（Streamlit Cloud対応）
+            try:
+                api_key = st.secrets["ANTHROPIC_API_KEY"]
+            except (KeyError, FileNotFoundError):
+                api_key = os.getenv('ANTHROPIC_API_KEY') or st.session_state.get('api_key')
 
             if not api_key:
                 st.warning("⚠️ Anthropic API Keyが設定されていません。「⚙️ 設定」から設定してください。")
@@ -1674,11 +1684,22 @@ elif page == "⚙️ 設定":
 
     st.subheader("API設定")
 
-    current_key = st.secrets.get('ANTHROPIC_API_KEY') or os.getenv('ANTHROPIC_API_KEY')
+    # APIキーを取得（Streamlit Cloud対応）
+    try:
+        current_key = st.secrets["ANTHROPIC_API_KEY"]
+    except (KeyError, FileNotFoundError):
+        current_key = os.getenv('ANTHROPIC_API_KEY')
 
     if current_key:
-        st.success("✅ .envファイルからAPIキーが読み込まれています")
+        st.success("✅ APIキーが設定されています")
         st.write(f"APIキー: `{current_key[:8]}...{current_key[-4:]}`")
+
+        # Streamlit Cloudの場合
+        try:
+            if st.secrets["ANTHROPIC_API_KEY"]:
+                st.info("💡 Streamlit Cloud Secretsから読み込まれています")
+        except (KeyError, FileNotFoundError):
+            st.info("💡 ローカルの.envファイルから読み込まれています")
 
         if st.button("APIキーを削除"):
             try:
@@ -1701,7 +1722,26 @@ elif page == "⚙️ 設定":
                 st.error(f"エラー: {e}")
 
     else:
-        st.info("APIキーを入力して保存すると、次回以降も自動的に読み込まれます")
+        st.warning("⚠️ APIキーが設定されていません")
+
+        # Streamlit Cloudでの設定方法を案内
+        with st.expander("🌐 Streamlit Cloudをお使いの場合"):
+            st.markdown("""
+            **Streamlit Cloudでは、以下の手順でAPIキーを設定してください：**
+
+            1. アプリのダッシュボードで「⚙️ Settings」をクリック
+            2. 「Secrets」セクションを開く
+            3. 以下の形式で入力：
+               ```toml
+               ANTHROPIC_API_KEY = "sk-ant-api03-..."
+               ```
+            4. 「Save」をクリック
+            5. アプリが自動的に再起動します
+
+            ⚠️ **注意:** Streamlit Cloudでは下記のフォームでの保存はできません。必ず上記の方法で設定してください。
+            """)
+
+        st.info("💻 **ローカル環境の場合:** 下記のフォームでAPIキーを入力して保存すると、.envファイルに保存され、次回以降も自動的に読み込まれます")
 
         with st.form("api_key_form"):
             api_key = st.text_input(

@@ -1,5 +1,19 @@
 # 更新履歴
 
+## v3.0.1 (2025-11-11)
+
+### バグ修正
+- 🐛 **Streamlit CloudでのAPI認証エラーを修正**
+  - `st.secrets.get()` の使用方法を修正
+  - Streamlit Cloudとローカル環境の両方に対応
+  - try-exceptで適切にエラーハンドリング
+
+### 改善
+- 📝 設定ページにStreamlit Cloud用の詳細な設定手順を追加
+- 💡 APIキーの読み込み元を明示（Secrets or .env）
+
+---
+
 ## v3.0.0 (2025-11-10)
 
 ### 新機能
