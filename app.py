@@ -67,7 +67,7 @@ with st.sidebar:
 
 # 記事分析＆ネタ展開ページ
 if page == "🔬 記事分析＆ネタ展開":
-    api_key = os.getenv('ANTHROPIC_API_KEY') or st.session_state.get('api_key')
+    api_key = st.secrets.get('ANTHROPIC_API_KEY') or os.getenv('ANTHROPIC_API_KEY') or st.session_state.get('api_key')
     render_article_analysis_page(api_key)
 
 # データ分析ページ（削除予定 - 後方互換性のため残す）
@@ -537,7 +537,7 @@ elif page == "💡 新テーマ提案":
     st.header("新テーマ提案 - ヒットパターンから広がる可能性")
 
     # API key確認
-    api_key = os.getenv('ANTHROPIC_API_KEY') or st.session_state.get('api_key')
+    api_key = st.secrets.get('ANTHROPIC_API_KEY') or os.getenv('ANTHROPIC_API_KEY') or st.session_state.get('api_key')
 
     if not api_key:
         st.warning("⚠️ Anthropic API Keyが設定されていません。「⚙️ 設定」から設定してください。")
@@ -711,7 +711,7 @@ elif page == "🤖 シナリオ生成":
                     st.write(f"- {theme}: {count}件")
 
     # API key確認
-    api_key = os.getenv('ANTHROPIC_API_KEY') or st.session_state.get('api_key')
+    api_key = st.secrets.get('ANTHROPIC_API_KEY') or os.getenv('ANTHROPIC_API_KEY') or st.session_state.get('api_key')
 
     if not api_key:
         st.warning("⚠️ Anthropic API Keyが設定されていません。「⚙️ 設定」から設定してください。")
@@ -1500,7 +1500,7 @@ elif page == "📝 ネタ管理":
             st.info("**未整理のメモをAIが分析して、自動的に適切なカテゴリに振り分けます！**")
 
             # API key確認
-            api_key = os.getenv('ANTHROPIC_API_KEY') or st.session_state.get('api_key')
+            api_key = st.secrets.get('ANTHROPIC_API_KEY') or os.getenv('ANTHROPIC_API_KEY') or st.session_state.get('api_key')
 
             if not api_key:
                 st.warning("⚠️ Anthropic API Keyが設定されていません。「⚙️ 設定」から設定してください。")
@@ -1674,7 +1674,7 @@ elif page == "⚙️ 設定":
 
     st.subheader("API設定")
 
-    current_key = os.getenv('ANTHROPIC_API_KEY')
+    current_key = st.secrets.get('ANTHROPIC_API_KEY') or os.getenv('ANTHROPIC_API_KEY')
 
     if current_key:
         st.success("✅ .envファイルからAPIキーが読み込まれています")
