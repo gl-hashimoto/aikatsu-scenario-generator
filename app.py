@@ -20,8 +20,9 @@ from pages.article_analysis import render_article_analysis_page
 VERSION = "3.0.1"
 VERSION_DATE = "2025-11-11"
 
-# 環境変数読み込み
-load_dotenv()
+# 環境変数読み込み（明示的にパスを指定）
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(env_path)
 
 # ページ設定
 st.set_page_config(
@@ -1700,6 +1701,40 @@ elif page == "⚙️ 設定":
                 st.info("💡 Streamlit Cloud Secretsから読み込まれています")
         except (KeyError, FileNotFoundError):
             st.info("💡 ローカルの.envファイルから読み込まれています")
+
+        st.markdown("---")
+        st.subheader("🔌 接続テスト")
+
+        col1, col2 = st.columns([2, 1])
+
+        with col1:
+            if st.button("🧪 API接続をテスト", use_container_width=True):
+                with st.spinner("接続テスト中..."):
+                    try:
+                        # APIキーをトリム
+                        test_key = current_key.strip()
+
+                        # Anthropicクライアントを作成
+                        client = Anthropic(api_key=test_key)
+
+                        # テストリクエスト
+                        message = client.messages.create(
+                            model="claude-sonnet-4-20250514",
+                            max_tokens=50,
+                            messages=[{"role": "user", "content": "Hello"}]
+                        )
+
+                        st.success("✅ API接続成功！正常に動作しています。")
+                        st.info(f"レスポンス: {message.content[0].text[:100]}...")
+
+                    except Exception as e:
+                        st.error(f"❌ API接続失敗: {e}")
+                        st.warning("APIキーが正しく設定されていない可能性があります。Streamlit Cloud Secretsを確認してください。")
+
+        with col2:
+            st.caption("所要時間: 約3秒")
+
+        st.markdown("---")
 
         if st.button("APIキーを削除"):
             try:
