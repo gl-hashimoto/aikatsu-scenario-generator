@@ -1,0 +1,36 @@
+# 環境変数（APIキーなど）
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# 仮想環境
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Streamlit（secrets.tomlのみ除外、config.tomlはコミット）
+.streamlit/secrets.toml
+
+# データファイル（必要に応じて）
+*.xlsx
+*.csv
+# ただしサンプルデータは除外しない
+!sample_data.csv
