@@ -77,7 +77,7 @@ def render_article_analysis_page(api_key):
                     # API呼び出し
                     message = client.messages.create(
                         model="claude-sonnet-4-20250514",
-                        max_tokens=2000,
+                        max_tokens=3000,
                         messages=[{"role": "user", "content": prompt}]
                     )
 
@@ -106,7 +106,7 @@ def render_article_analysis_page(api_key):
                     # API呼び出し
                     message = client.messages.create(
                         model="claude-sonnet-4-20250514",
-                        max_tokens=3000,
+                        max_tokens=4000,
                         messages=[{"role": "user", "content": prompt}]
                     )
 
@@ -168,10 +168,13 @@ def render_article_analysis_page(api_key):
                         num_themes=num_themes
                     )
 
-                    # API呼び出し
+                    # API呼び出し（テーマ数に応じてmax_tokensを調整）
+                    # 1テーマあたり約600トークン必要と想定
+                    estimated_tokens = min(num_themes * 600 + 1000, 8000)
+
                     message = client.messages.create(
                         model="claude-sonnet-4-20250514",
-                        max_tokens=4000,
+                        max_tokens=estimated_tokens,
                         messages=[{"role": "user", "content": prompt}]
                     )
 
@@ -179,6 +182,10 @@ def render_article_analysis_page(api_key):
 
                     # セッション状態に保存
                     st.session_state.generated_themes = themes
+
+                    # トークン上限に達したかチェック
+                    if message.stop_reason == "max_tokens":
+                        st.warning(f"⚠️ 生成が途中で終了しました。テーマ数を減らすか、複数回に分けて生成することをお勧めします。")
 
                     st.success(f"✅ {num_themes}個のテーマを生成しました！")
 
