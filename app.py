@@ -14,11 +14,12 @@ import sys
 # ユーティリティのインポート
 sys.path.append(os.path.dirname(__file__))
 from utils.prompt_library import PromptLibrary
+from utils.scenario_manager import load_scenario_history, save_scenario, delete_scenario
 from pages.article_analysis import render_article_analysis_page
 
 # バージョン情報
-VERSION = "3.0.1"
-VERSION_DATE = "2025-11-11"
+VERSION = "3.1.0"
+VERSION_DATE = "2025-11-13"
 
 # 環境変数読み込み（明示的にパスを指定）
 env_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -1191,13 +1192,128 @@ elif page == "🤖 シナリオ生成":
             st.markdown("### シナリオ本文")
             st.markdown(st.session_state.generated_scenario)
 
-            # ダウンロードボタン
-            st.download_button(
-                label="📥 シナリオをダウンロード",
-                data=st.session_state.generated_scenario,
-                file_name=st.session_state.scenario_filename,
-                mime="text/markdown"
-            )
+            # ダウンロードボタンと保存ボタン
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.download_button(
+                    label="📥 シナリオをダウンロード",
+                    data=st.session_state.generated_scenario,
+                    file_name=st.session_state.scenario_filename,
+                    mime="text/markdown",
+                    use_container_width=True
+                )
+
+            with col2:
+                if st.button("💾 シナリオを保存", use_container_width=True, type="secondary"):
+                    try:
+                        scenario_id = save_scenario(
+                            scenario_params=st.session_state.get('scenario_params', {}),
+                            scenario_content=st.session_state.get('generated_scenario', '')
+                        )
+                        st.success(f"✅ シナリオを保存しました！（ID: {scenario_id}）")
+                        st.info("💡 下の「📚 保存済みシナリオ」セクションで確認できます")
+                    except Exception as e:
+                        st.error(f"保存中にエラーが発生しました: {e}")
+
+        # 保存済みシナリオの履歴表示
+        st.markdown("---")
+        st.subheader("📚 保存済みシナリオ")
+
+        history = load_scenario_history()
+        scenarios = history.get('scenarios', [])
+
+        if not scenarios:
+            st.info("保存されたシナリオはまだありません。シナリオを生成して「💾 シナリオを保存」ボタンで保存してください。")
+        else:
+            st.write(f"**保存数: {len(scenarios)}件**")
+
+            # セッション状態で選択中のシナリオを管理
+            if 'selected_scenario_id' not in st.session_state:
+                st.session_state.selected_scenario_id = None
+
+            # 一覧表示
+            for scenario in scenarios:
+                with st.container():
+                    col1, col2, col3 = st.columns([6, 2, 1])
+
+                    with col1:
+                        # タイトルをボタンとして表示（クリックで詳細表示）
+                        if st.button(
+                            f"📄 {scenario['title']}",
+                            key=f"select_scn_{scenario['id']}",
+                            use_container_width=True
+                        ):
+                            st.session_state.selected_scenario_id = scenario['id']
+                            st.rerun()
+
+                        # 要約を表示
+                        st.caption(f"💬 {scenario['summary']}")
+
+                    with col2:
+                        # 作成日時を表示
+                        created_at = datetime.datetime.fromisoformat(scenario['created_at'])
+                        st.caption(f"📅 {created_at.strftime('%Y/%m/%d %H:%M')}")
+
+                    with col3:
+                        # 削除ボタン
+                        if st.button("🗑️", key=f"delete_scn_{scenario['id']}", help="削除"):
+                            try:
+                                delete_scenario(scenario['id'])
+                                st.success("削除しました")
+                                if st.session_state.selected_scenario_id == scenario['id']:
+                                    st.session_state.selected_scenario_id = None
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"削除中にエラーが発生しました: {e}")
+
+                    st.markdown("---")
+
+            # 選択されたシナリオの詳細表示
+            if st.session_state.selected_scenario_id:
+                selected_scenario = next(
+                    (s for s in scenarios if s['id'] == st.session_state.selected_scenario_id),
+                    None
+                )
+
+                if selected_scenario:
+                    st.markdown("---")
+                    st.markdown(f"## 📖 詳細: {selected_scenario['title']}")
+
+                    # 閉じるボタン
+                    if st.button("✖️ 閉じる", key="close_scenario"):
+                        st.session_state.selected_scenario_id = None
+                        st.rerun()
+
+                    st.markdown(f"**作成日時:** {datetime.datetime.fromisoformat(selected_scenario['created_at']).strftime('%Y年%m月%d日 %H:%M')}")
+
+                    # パラメータを表示
+                    if selected_scenario.get('parameters'):
+                        with st.expander("📋 生成設定", expanded=True):
+                            params = selected_scenario['parameters']
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.markdown(f"**雰囲気:** {params.get('tone', 'N/A')}")
+                                st.markdown(f"**場面:** {params.get('situation', 'N/A')}")
+                                st.markdown(f"**主人公:** {params.get('protagonist', 'N/A')}")
+                            with col2:
+                                st.markdown(f"**敵対者:** {params.get('antagonist', 'N/A')}")
+                                st.markdown(f"**オチ:** {params.get('ending', 'N/A')}")
+                                st.markdown(f"**ページ数:** {params.get('page_structure', 'N/A')}")
+
+                    # シナリオ本文
+                    st.markdown("### シナリオ本文")
+                    st.markdown(selected_scenario['content'])
+
+                    # ダウンロードボタン
+                    st.markdown("---")
+                    st.download_button(
+                        label="📥 このシナリオをダウンロード",
+                        data=selected_scenario['content'],
+                        file_name=f"scenario_{selected_scenario['id']}.md",
+                        mime="text/markdown",
+                        use_container_width=True
+                    )
 
 # ネタ管理ページ
 elif page == "📝 ネタ管理":
