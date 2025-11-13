@@ -6,7 +6,9 @@ from anthropic import Anthropic
 import os
 import json
 import datetime
+import time
 from utils.prompt_library import PromptLibrary
+from utils import job_manager
 
 
 # 分析履歴のファイルパス
@@ -81,6 +83,79 @@ def render_article_analysis_page(api_key):
     # プロンプトライブラリの初期化
     prompts = PromptLibrary()
 
+    # ========== 実行中のジョブを表示 ==========
+    running_jobs = job_manager.get_running_jobs()
+    running_analysis_jobs = [j for j in running_jobs if j['type'] == 'analysis']
+
+    if running_analysis_jobs:
+        st.info(f"🔄 {len(running_analysis_jobs)}件の分析が実行中です")
+
+        with st.expander("実行中のジョブを表示", expanded=True):
+            for job in running_analysis_jobs:
+                col1, col2, col3 = st.columns([6, 3, 1])
+
+                with col1:
+                    st.markdown(f"**{job['title']}**")
+                    st.progress(job['progress'] / 100)
+
+                with col2:
+                    status_text = {
+                        'pending': '⏳ 待機中',
+                        'running': '🔄 実行中',
+                    }.get(job['status'], job['status'])
+                    st.caption(f"{status_text} ({job['progress']}%)")
+
+                with col3:
+                    if st.button("🗑️", key=f"cancel_{job['id']}", help="キャンセル"):
+                        job_manager.delete_job(job['id'])
+                        st.rerun()
+
+                st.markdown("---")
+
+            # 自動更新（5秒ごと）
+            if st.button("🔄 状態を更新"):
+                st.rerun()
+
+            st.caption("💡 ページを離れても処理は継続されます。完了すると自動的に「完了したジョブ」に表示されます。")
+
+    # 完了したジョブを表示
+    completed_jobs = job_manager.get_completed_jobs()
+    completed_analysis_jobs = [j for j in completed_jobs if j['type'] == 'analysis']
+
+    if completed_analysis_jobs:
+        with st.expander(f"✅ 完了したジョブ ({len(completed_analysis_jobs)}件)", expanded=False):
+            for job in completed_analysis_jobs:
+                col1, col2, col3 = st.columns([6, 3, 1])
+
+                with col1:
+                    st.markdown(f"**{job['title']}**")
+                    st.caption(f"完了: {datetime.datetime.fromisoformat(job['completed_at']).strftime('%Y/%m/%d %H:%M')}")
+
+                with col2:
+                    if st.button("📥 履歴に保存", key=f"save_{job['id']}"):
+                        # 結果を履歴に保存
+                        result = job['result']
+                        save_analysis(
+                            title=result['article_title'],
+                            content=result['article_content'],
+                            basic_analysis=result['basic_analysis'],
+                            deep_analysis=result['deep_analysis'],
+                            themes=result.get('themes')
+                        )
+                        # ジョブを削除
+                        job_manager.delete_job(job['id'])
+                        st.success("✅ 履歴に保存しました")
+                        st.rerun()
+
+                with col3:
+                    if st.button("🗑️", key=f"delete_completed_{job['id']}", help="削除"):
+                        job_manager.delete_job(job['id'])
+                        st.rerun()
+
+                st.markdown("---")
+
+    st.markdown("---")
+
     # タブで「新規分析」と「分析履歴」を切り替え
     tab1, tab2 = st.tabs(["📝 新規分析", "📚 分析履歴"])
 
@@ -127,65 +202,36 @@ def render_article_analysis_page(api_key):
             elif not api_key:
                 st.error("⚠️ API Keyが設定されていません。「⚙️ 設定」から設定してください。")
             else:
-                # 基本分析
-                with st.spinner("📊 基本分析中..."):
-                    try:
-                        client = Anthropic(api_key=api_key)
+                try:
+                    # ジョブを作成
+                    job_title = article_title or f"記事分析 {datetime.datetime.now().strftime('%m/%d %H:%M')}"
+                    job_id = job_manager.create_job(
+                        job_type="analysis",
+                        title=job_title,
+                        params={
+                            "article_title": article_title,
+                            "article_content": article_content
+                        }
+                    )
 
-                        # プロンプト作成
-                        prompt = prompts.format(
-                            "analysis",
-                            "basic_analysis",
-                            article_title=article_title or "（タイトルなし）",
-                            article_content=article_content
-                        )
+                    # バックグラウンドで分析を開始
+                    job_manager.start_article_analysis_job(
+                        job_id=job_id,
+                        api_key=api_key,
+                        article_title=article_title,
+                        article_content=article_content,
+                        prompts=prompts
+                    )
 
-                        # API呼び出し
-                        message = client.messages.create(
-                            model="claude-sonnet-4-20250514",
-                            max_tokens=3000,
-                            messages=[{"role": "user", "content": prompt}]
-                        )
+                    st.success(f"✅ 分析をバックグラウンドで開始しました！（ジョブID: {job_id}）")
+                    st.info("💡 ページを離れても処理は継続されます。上部の「実行中のジョブ」で進捗を確認できます。")
 
-                        basic_analysis = message.content[0].text
+                    # ページをリロードして状態を更新
+                    time.sleep(1)
+                    st.rerun()
 
-                        # セッション状態に保存
-                        st.session_state.basic_analysis = basic_analysis
-                        st.session_state.article_content = article_content
-                        st.session_state.article_title = article_title
-
-                    except Exception as e:
-                        st.error(f"エラーが発生しました: {e}")
-                        return
-
-                # 深堀り分析
-                with st.spinner("🔬 深堀り分析中（3段階）..."):
-                    try:
-                        # プロンプト作成
-                        prompt = prompts.format(
-                            "analysis",
-                            "deep_analysis",
-                            article_content=article_content,
-                            basic_analysis=basic_analysis
-                        )
-
-                        # API呼び出し
-                        message = client.messages.create(
-                            model="claude-sonnet-4-20250514",
-                            max_tokens=4000,
-                            messages=[{"role": "user", "content": prompt}]
-                        )
-
-                        deep_analysis = message.content[0].text
-
-                        # セッション状態に保存
-                        st.session_state.deep_analysis = deep_analysis
-
-                        st.success("✅ 分析が完了しました！")
-
-                    except Exception as e:
-                        st.error(f"深堀り分析でエラーが発生しました: {e}")
-                        return
+                except Exception as e:
+                    st.error(f"ジョブの作成中にエラーが発生しました: {e}")
 
         # 分析結果の表示
         if 'basic_analysis' in st.session_state and 'deep_analysis' in st.session_state:
