@@ -39,13 +39,19 @@ def save_analysis(title, content, basic_analysis, deep_analysis, themes=None):
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     analysis_id = f"ana_{timestamp}"
 
+    # タイトルが空の場合、記事内容の最初の50文字を使用
+    if not title or title.strip() == "":
+        # 改行やタブを除去して最初の50文字を取得
+        clean_content = content.replace('\n', ' ').replace('\t', ' ').strip()
+        title = clean_content[:50] + "..." if len(clean_content) > 50 else clean_content
+
     # 要約を生成（記事内容の最初の100文字）
     summary = content[:100] + "..." if len(content) > 100 else content
 
     # 新しい分析データを作成
     new_analysis = {
         "id": analysis_id,
-        "title": title or "（タイトルなし）",
+        "title": title,
         "content": content,
         "summary": summary,
         "basic_analysis": basic_analysis,
@@ -71,9 +77,9 @@ def delete_analysis(analysis_id):
 
 
 def render_article_analysis_page(api_key):
-    """記事分析＆ネタ展開ページを表示"""
+    """記事ネタ提案ページを表示"""
 
-    st.header("🔬 記事分析＆ネタ展開")
+    st.header("💡 記事ネタ提案")
     st.write("ヒット記事を分析して、新しいテーマのアイデアを生み出します。")
 
     # APIキーのトリム処理（余分な空白や改行を削除）
@@ -197,8 +203,8 @@ def render_article_analysis_page(api_key):
 
     st.markdown("---")
 
-    # タブで「新規分析」と「分析履歴」を切り替え
-    tab1, tab2 = st.tabs(["📝 新規分析", "📚 分析履歴"])
+    # タブで「新規分析」と「保存済記事ネタ提案」を切り替え
+    tab1, tab2 = st.tabs(["📝 新規分析", "📚 保存済記事ネタ提案"])
 
     # ========== タブ1: 新規分析 ==========
     with tab1:
@@ -279,7 +285,7 @@ def render_article_analysis_page(api_key):
     # ========== タブ2: 分析履歴 ==========
     with tab2:
         st.markdown("---")
-        st.subheader("📚 保存済みの分析")
+        st.subheader("📚 保存済記事ネタ提案")
 
         # 履歴を読み込み
         history = load_analysis_history()

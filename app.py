@@ -18,7 +18,7 @@ from utils.scenario_manager import load_scenario_history, save_scenario, delete_
 from pages.article_analysis import render_article_analysis_page
 
 # バージョン情報
-VERSION = "3.1.6"
+VERSION = "3.1.8"
 VERSION_DATE = "2025-11-13"
 
 # 環境変数読み込み（明示的にパスを指定）
@@ -50,7 +50,7 @@ with st.sidebar:
     st.header("メニュー")
     page = st.radio(
         "選択してください",
-        ["🔬 記事分析＆ネタ展開", "📝 ネタ管理", "🤖 シナリオ生成", "⚙️ 設定"]
+        ["💡 記事ネタ提案", "📝 ネタ管理", "🤖 シナリオ生成", "⚙️ 設定"]
     )
 
     # データ読み込み状況を表示
@@ -67,8 +67,8 @@ with st.sidebar:
     st.caption(f"Version {VERSION}")
     st.caption(f"Updated: {VERSION_DATE}")
 
-# 記事分析＆ネタ展開ページ
-if page == "🔬 記事分析＆ネタ展開":
+# 記事ネタ提案ページ
+if page == "💡 記事ネタ提案":
     # APIキーを取得（Streamlit Cloud対応）
     try:
         api_key = st.secrets["ANTHROPIC_API_KEY"]
