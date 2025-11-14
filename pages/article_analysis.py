@@ -91,11 +91,11 @@ def render_article_analysis_page(api_key):
         st.info(f"🔄 {len(running_analysis_jobs)}件の分析が実行中です")
 
         with st.expander("実行中のジョブを表示", expanded=True):
-            for job in running_analysis_jobs:
+            for idx, job in enumerate(running_analysis_jobs, 1):
                 col1, col2, col3 = st.columns([6, 3, 1])
 
                 with col1:
-                    st.markdown(f"**{job['title']}**")
+                    st.markdown(f"**#{idx} {job['title']}**")
                     st.progress(job['progress'] / 100)
 
                 with col2:
@@ -118,39 +118,80 @@ def render_article_analysis_page(api_key):
 
             st.caption("💡 ページを離れても処理は継続されます。完了すると自動的に「完了したジョブ」に表示されます。")
 
+    # 失敗したジョブを表示
+    all_jobs = job_manager.load_jobs()
+    failed_analysis_jobs = [j for j in all_jobs['jobs'] if j['type'] == 'analysis' and j['status'] == 'failed']
+
+    if failed_analysis_jobs:
+        st.error(f"❌ {len(failed_analysis_jobs)}件のジョブが失敗しました")
+
+        with st.expander("失敗したジョブを表示", expanded=True):
+            for idx, job in enumerate(failed_analysis_jobs, 1):
+                st.markdown(f"### ❌ #{idx} {job['title']}")
+                st.caption(f"失敗: {datetime.datetime.fromisoformat(job['completed_at']).strftime('%Y/%m/%d %H:%M')}")
+
+                # エラー内容を表示
+                if job.get('error'):
+                    st.error(f"**エラー内容:** {job['error']}")
+
+                # 削除ボタン
+                if st.button("🗑️ 削除", key=f"delete_failed_{job['id']}", use_container_width=True):
+                    job_manager.delete_job(job['id'])
+                    st.rerun()
+
+                st.markdown("---")
+
     # 完了したジョブを表示
     completed_jobs = job_manager.get_completed_jobs()
     completed_analysis_jobs = [j for j in completed_jobs if j['type'] == 'analysis']
 
     if completed_analysis_jobs:
-        with st.expander(f"✅ 完了したジョブ ({len(completed_analysis_jobs)}件)", expanded=False):
-            for job in completed_analysis_jobs:
-                col1, col2, col3 = st.columns([6, 3, 1])
+        with st.expander(f"✅ 完了したジョブ ({len(completed_analysis_jobs)}件)", expanded=True):
+            for idx, job in enumerate(completed_analysis_jobs, 1):
+                result = job.get('result', {})
 
-                with col1:
-                    st.markdown(f"**{job['title']}**")
-                    st.caption(f"完了: {datetime.datetime.fromisoformat(job['completed_at']).strftime('%Y/%m/%d %H:%M')}")
+                st.markdown(f"### 📄 #{idx} {job['title']}")
+                st.caption(f"完了: {datetime.datetime.fromisoformat(job['completed_at']).strftime('%Y/%m/%d %H:%M')}")
 
-                with col2:
-                    if st.button("📥 履歴に保存", key=f"save_{job['id']}"):
-                        # 結果を履歴に保存
-                        result = job['result']
-                        save_analysis(
-                            title=result['article_title'],
-                            content=result['article_content'],
-                            basic_analysis=result['basic_analysis'],
-                            deep_analysis=result['deep_analysis'],
-                            themes=result.get('themes')
+                # テーマを表示
+                if result.get('themes'):
+                    st.markdown("#### 💡 生成されたテーマ（6個）")
+                    st.markdown(result['themes'])
+
+                    # ボタン
+                    col1, col2, col3 = st.columns([2, 2, 1])
+
+                    with col1:
+                        st.download_button(
+                            label="📥 テーマをダウンロード",
+                            data=result['themes'],
+                            file_name=f"themes_{job['id']}.md",
+                            mime="text/markdown",
+                            key=f"download_{job['id']}",
+                            use_container_width=True
                         )
-                        # ジョブを削除
-                        job_manager.delete_job(job['id'])
-                        st.success("✅ 履歴に保存しました")
-                        st.rerun()
 
-                with col3:
-                    if st.button("🗑️", key=f"delete_completed_{job['id']}", help="削除"):
-                        job_manager.delete_job(job['id'])
-                        st.rerun()
+                    with col2:
+                        if st.button("💾 履歴に保存", key=f"save_{job['id']}", use_container_width=True):
+                            # 結果を履歴に保存
+                            save_analysis(
+                                title=result['article_title'],
+                                content=result['article_content'],
+                                basic_analysis=result['basic_analysis'],
+                                deep_analysis=result['deep_analysis'],
+                                themes=result.get('themes')
+                            )
+                            # ジョブを削除
+                            job_manager.delete_job(job['id'])
+                            st.success("✅ 履歴に保存しました")
+                            st.rerun()
+
+                    with col3:
+                        if st.button("🗑️", key=f"delete_completed_{job['id']}", help="削除", use_container_width=True):
+                            job_manager.delete_job(job['id'])
+                            st.rerun()
+                else:
+                    st.warning("テーマ生成中にエラーが発生した可能性があります")
 
                 st.markdown("---")
 
@@ -214,17 +255,19 @@ def render_article_analysis_page(api_key):
                         }
                     )
 
-                    # バックグラウンドで分析を開始
+                    # バックグラウンドで分析を開始（テーマ6個を自動生成）
                     job_manager.start_article_analysis_job(
                         job_id=job_id,
                         api_key=api_key,
                         article_title=article_title,
                         article_content=article_content,
-                        prompts=prompts
+                        prompts=prompts,
+                        auto_generate_themes=True,
+                        num_themes=6
                     )
 
-                    st.success(f"✅ 分析をバックグラウンドで開始しました！（ジョブID: {job_id}）")
-                    st.info("💡 ページを離れても処理は継続されます。上部の「実行中のジョブ」で進捗を確認できます。")
+                    st.success(f"✅ 分析とテーマ生成（6個）をバックグラウンドで開始しました！")
+                    st.info("💡 ページを離れても処理は継続されます。完了すると上部の「完了したジョブ」に表示されます。")
 
                     # ページをリロードして状態を更新
                     time.sleep(1)
@@ -232,110 +275,6 @@ def render_article_analysis_page(api_key):
 
                 except Exception as e:
                     st.error(f"ジョブの作成中にエラーが発生しました: {e}")
-
-        # 分析結果の表示
-        if 'basic_analysis' in st.session_state and 'deep_analysis' in st.session_state:
-            st.markdown("---")
-            st.subheader("ステップ2️⃣ 分析結果")
-
-            # タブで表示
-            analysis_tab1, analysis_tab2 = st.tabs(["📊 基本分析", "🔬 深堀り分析"])
-
-            with analysis_tab1:
-                st.markdown(st.session_state.basic_analysis)
-
-            with analysis_tab2:
-                st.markdown(st.session_state.deep_analysis)
-
-            st.markdown("---")
-            st.subheader("ステップ3️⃣ 新テーマ提案")
-
-            col1, col2 = st.columns([2, 1])
-
-            with col1:
-                num_themes = st.slider("提案数", min_value=5, max_value=20, value=10, step=1)
-
-            with col2:
-                generate_button = st.button("🚀 新テーマを生成", use_container_width=True, type="primary")
-
-            if generate_button:
-                with st.spinner(f"💡 {num_themes}個のテーマを生成中..."):
-                    try:
-                        client = Anthropic(api_key=api_key)
-
-                        # 分析結果を統合
-                        analysis_result = f"""
-【基本分析】
-{st.session_state.basic_analysis}
-
-【深堀り分析】
-{st.session_state.deep_analysis}
-"""
-
-                        # プロンプト作成
-                        prompt = prompts.format(
-                            "theme_generation",
-                            "generate_themes",
-                            analysis_result=analysis_result,
-                            num_themes=num_themes
-                        )
-
-                        # API呼び出し（テーマ数に応じてmax_tokensを調整）
-                        # 1テーマあたり約600トークン必要と想定
-                        estimated_tokens = min(num_themes * 600 + 1000, 8000)
-
-                        message = client.messages.create(
-                            model="claude-sonnet-4-20250514",
-                            max_tokens=estimated_tokens,
-                            messages=[{"role": "user", "content": prompt}]
-                        )
-
-                        themes = message.content[0].text
-
-                        # セッション状態に保存
-                        st.session_state.generated_themes = themes
-
-                        # トークン上限に達したかチェック
-                        if message.stop_reason == "max_tokens":
-                            st.warning(f"⚠️ 生成が途中で終了しました。テーマ数を減らすか、複数回に分けて生成することをお勧めします。")
-
-                        st.success(f"✅ {num_themes}個のテーマを生成しました！")
-
-                    except Exception as e:
-                        st.error(f"テーマ生成でエラーが発生しました: {e}")
-
-            # 生成されたテーマを表示
-            if 'generated_themes' in st.session_state:
-                st.markdown("---")
-                st.subheader("💡 生成されたテーマ")
-                st.markdown(st.session_state.generated_themes)
-
-                # ダウンロードボタンと保存ボタン
-                col1, col2 = st.columns(2)
-
-                with col1:
-                    st.download_button(
-                        label="📥 テーマをダウンロード",
-                        data=st.session_state.generated_themes,
-                        file_name=f"new_themes_{num_themes}.md",
-                        mime="text/markdown",
-                        use_container_width=True
-                    )
-
-                with col2:
-                    if st.button("💾 分析結果を保存", use_container_width=True, type="secondary"):
-                        try:
-                            analysis_id = save_analysis(
-                                title=st.session_state.get('article_title', ''),
-                                content=st.session_state.get('article_content', ''),
-                                basic_analysis=st.session_state.get('basic_analysis', ''),
-                                deep_analysis=st.session_state.get('deep_analysis', ''),
-                                themes=st.session_state.get('generated_themes')
-                            )
-                            st.success(f"✅ 分析結果を保存しました！（ID: {analysis_id}）")
-                            st.info("💡 「📚 分析履歴」タブで確認できます")
-                        except Exception as e:
-                            st.error(f"保存中にエラーが発生しました: {e}")
 
     # ========== タブ2: 分析履歴 ==========
     with tab2:

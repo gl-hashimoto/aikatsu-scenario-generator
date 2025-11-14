@@ -19,13 +19,14 @@ class PromptLibrary:
         self.base_dir = base_dir
         self.cache = {}
 
-    def load(self, category, prompt_name):
+    def load(self, category, prompt_name, use_cache=True):
         """
         プロンプトファイルを読み込み
 
         Args:
             category: カテゴリ名（analysis, theme_generation など）
             prompt_name: プロンプトファイル名（拡張子なし）
+            use_cache: キャッシュを使用するか（デフォルト: True）
 
         Returns:
             str: プロンプトの内容
@@ -33,7 +34,7 @@ class PromptLibrary:
         cache_key = f"{category}/{prompt_name}"
 
         # キャッシュチェック
-        if cache_key in self.cache:
+        if use_cache and cache_key in self.cache:
             return self.cache[cache_key]
 
         # ファイル読み込み

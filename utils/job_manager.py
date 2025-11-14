@@ -142,8 +142,8 @@ def cleanup_old_jobs(days: int = 7):
 # 記事分析用のバックグラウンドタスク
 # =====================================================
 
-def run_article_analysis_job(job_id: str, api_key: str, article_title: str, article_content: str, prompts):
-    """記事分析をバックグラウンドで実行"""
+def run_article_analysis_job(job_id: str, api_key: str, article_title: str, article_content: str, prompts, auto_generate_themes: bool = True, num_themes: int = 6):
+    """記事分析をバックグラウンドで実行し、自動的にテーマ生成も行う"""
     try:
         update_job_status(job_id, "running", progress=10)
 
@@ -165,7 +165,7 @@ def run_article_analysis_job(job_id: str, api_key: str, article_title: str, arti
         )
 
         basic_analysis = message.content[0].text
-        update_job_status(job_id, "running", progress=50)
+        update_job_status(job_id, "running", progress=40)
 
         # 深堀り分析
         prompt = prompts.format(
@@ -182,14 +182,54 @@ def run_article_analysis_job(job_id: str, api_key: str, article_title: str, arti
         )
 
         deep_analysis = message.content[0].text
-        update_job_status(job_id, "running", progress=80)
+        update_job_status(job_id, "running", progress=60)
+
+        # 自動的にテーマ生成を実行
+        themes = None
+        if auto_generate_themes:
+            # 分析結果を統合
+            analysis_result = f"""
+【基本分析】
+{basic_analysis}
+
+【深堀り分析】
+{deep_analysis}
+"""
+
+            update_job_status(job_id, "running", progress=70)
+
+            # story_tips を読み込み（キャッシュを使わない）
+            story_tips = prompts.load("theme_generation", "story_tips", use_cache=False)
+
+            # テーマ生成プロンプト作成
+            prompt = prompts.format(
+                "theme_generation",
+                "generate_themes",
+                analysis_result=analysis_result,
+                num_themes=num_themes,
+                story_tips=story_tips
+            )
+
+            # テーマ生成API呼び出し
+            estimated_tokens = min(num_themes * 600 + 1000, 8000)
+
+            message = client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=estimated_tokens,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
+            themes = message.content[0].text
+            update_job_status(job_id, "running", progress=90)
 
         # 結果を保存
         result = {
             "article_title": article_title,
             "article_content": article_content,
             "basic_analysis": basic_analysis,
-            "deep_analysis": deep_analysis
+            "deep_analysis": deep_analysis,
+            "themes": themes,
+            "num_themes": num_themes
         }
 
         update_job_status(job_id, "completed", progress=100, result=result)
@@ -198,11 +238,11 @@ def run_article_analysis_job(job_id: str, api_key: str, article_title: str, arti
         update_job_status(job_id, "failed", error=str(e))
 
 
-def start_article_analysis_job(job_id: str, api_key: str, article_title: str, article_content: str, prompts):
+def start_article_analysis_job(job_id: str, api_key: str, article_title: str, article_content: str, prompts, auto_generate_themes: bool = True, num_themes: int = 6):
     """記事分析ジョブをバックグラウンドで開始"""
     thread = threading.Thread(
         target=run_article_analysis_job,
-        args=(job_id, api_key, article_title, article_content, prompts),
+        args=(job_id, api_key, article_title, article_content, prompts, auto_generate_themes, num_themes),
         daemon=True
     )
     thread.start()
@@ -219,12 +259,16 @@ def run_theme_generation_job(job_id: str, api_key: str, analysis_result: str, nu
 
         client = Anthropic(api_key=api_key)
 
+        # story_tips を読み込み（キャッシュを使わない）
+        story_tips = prompts.load("theme_generation", "story_tips", use_cache=False)
+
         # プロンプト作成
         prompt = prompts.format(
             "theme_generation",
             "generate_themes",
             analysis_result=analysis_result,
-            num_themes=num_themes
+            num_themes=num_themes,
+            story_tips=story_tips
         )
 
         update_job_status(job_id, "running", progress=40)

@@ -18,7 +18,7 @@ from utils.scenario_manager import load_scenario_history, save_scenario, delete_
 from pages.article_analysis import render_article_analysis_page
 
 # バージョン情報
-VERSION = "3.1.1"
+VERSION = "3.1.6"
 VERSION_DATE = "2025-11-13"
 
 # 環境変数読み込み（明示的にパスを指定）
