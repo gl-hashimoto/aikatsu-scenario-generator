@@ -11,9 +11,11 @@ from anthropic import Anthropic
 
 # ジョブ状態ファイルのパス
 JOBS_FILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'jobs.json')
+ANALYSIS_HISTORY_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'analysis_history.json')
 
 # ロック（スレッドセーフな操作のため）
 _jobs_lock = threading.Lock()
+_history_lock = threading.Lock()
 
 
 def load_jobs():
@@ -139,6 +141,61 @@ def cleanup_old_jobs(days: int = 7):
 
 
 # =====================================================
+# 分析履歴への自動保存
+# =====================================================
+
+def save_analysis_to_history(title: str, content: str, basic_analysis: str, deep_analysis: str, themes: str = None):
+    """分析結果を履歴に保存する"""
+    try:
+        with _history_lock:
+            # 履歴を読み込み
+            try:
+                with open(ANALYSIS_HISTORY_PATH, 'r', encoding='utf-8') as f:
+                    history = json.load(f)
+            except FileNotFoundError:
+                history = {"version": "1.0.0", "last_updated": datetime.datetime.now().strftime("%Y-%m-%d"), "analyses": []}
+
+            # 新しい分析IDを生成
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            analysis_id = f"ana_{timestamp}"
+
+            # タイトルが空の場合、記事内容の最初の50文字を使用
+            if not title or title.strip() == "":
+                # 改行やタブを除去して最初の50文字を取得
+                clean_content = content.replace('\n', ' ').replace('\t', ' ').strip()
+                title = clean_content[:50] + "..." if len(clean_content) > 50 else clean_content
+
+            # 要約を生成（記事内容の最初の100文字）
+            summary = content[:100] + "..." if len(content) > 100 else content
+
+            # 新しい分析データを作成
+            new_analysis = {
+                "id": analysis_id,
+                "title": title,
+                "content": content,
+                "summary": summary,
+                "basic_analysis": basic_analysis,
+                "deep_analysis": deep_analysis,
+                "themes": themes,
+                "created_at": datetime.datetime.now().isoformat(),
+            }
+
+            # 履歴に追加（最新が先頭）
+            history['analyses'].insert(0, new_analysis)
+
+            # 保存
+            history['last_updated'] = datetime.datetime.now().strftime("%Y-%m-%d")
+            os.makedirs(os.path.dirname(ANALYSIS_HISTORY_PATH), exist_ok=True)
+            with open(ANALYSIS_HISTORY_PATH, 'w', encoding='utf-8') as f:
+                json.dump(history, f, ensure_ascii=False, indent=2)
+
+            return analysis_id
+    except Exception as e:
+        print(f"履歴保存エラー: {e}")
+        return None
+
+
+# =====================================================
 # 記事分析用のバックグラウンドタスク
 # =====================================================
 
@@ -233,6 +290,15 @@ def run_article_analysis_job(job_id: str, api_key: str, article_title: str, arti
         }
 
         update_job_status(job_id, "completed", progress=100, result=result)
+
+        # 自動的に履歴に保存
+        save_analysis_to_history(
+            title=article_title,
+            content=article_content,
+            basic_analysis=basic_analysis,
+            deep_analysis=deep_analysis,
+            themes=themes
+        )
 
     except Exception as e:
         update_job_status(job_id, "failed", error=str(e))

@@ -18,8 +18,8 @@ from utils.scenario_manager import load_scenario_history, save_scenario, delete_
 from pages.article_analysis import render_article_analysis_page
 
 # バージョン情報
-VERSION = "3.1.8"
-VERSION_DATE = "2025-11-13"
+VERSION = "3.2.2"
+VERSION_DATE = "2025-11-14"
 
 # 環境変数読み込み（明示的にパスを指定）
 env_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -27,8 +27,8 @@ load_dotenv(env_path)
 
 # ページ設定
 st.set_page_config(
-    page_title=f"漫画シナリオ生成AI v{VERSION}",
-    page_icon="📖",
+    page_title=f"記事ネタ提案ツール v{VERSION}",
+    page_icon="💡",
     layout="wide"
 )
 
@@ -41,7 +41,7 @@ if 'selected_sheet' not in st.session_state:
     st.session_state.selected_sheet = None
 
 # タイトル
-st.title(f"📖 漫画シナリオ生成AI - 愛カツ専用版 `v{VERSION}`")
+st.title(f"💡 記事ネタ提案ツール `v{VERSION}`")
 st.caption(f"最終更新: {VERSION_DATE}")
 st.markdown("---")
 
@@ -50,7 +50,7 @@ with st.sidebar:
     st.header("メニュー")
     page = st.radio(
         "選択してください",
-        ["💡 記事ネタ提案", "📝 ネタ管理", "🤖 シナリオ生成", "⚙️ 設定"]
+        ["💡 記事ネタ提案", "⚙️ 設定"]
     )
 
     # データ読み込み状況を表示
