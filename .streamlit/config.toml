@@ -1,4 +1,3 @@
-[server]
-port = 8502
-
-
+# Streamlit Cloud用の設定
+# ポート設定はローカル開発時のみ使用
+# Streamlit Cloudでは自動的に適切なポートが設定されます
