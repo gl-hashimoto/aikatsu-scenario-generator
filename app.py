@@ -18,7 +18,7 @@ try:
     sys.path.append(os.path.dirname(__file__))
     from utils.prompt_library import PromptLibrary
     from utils.scenario_manager import load_scenario_history, save_scenario, delete_scenario
-    from pages.article_analysis import render_article_analysis_page
+    from modules.article_analysis import render_article_analysis_page
     st.success("✅ All modules imported successfully")
 except Exception as e:
     st.error(f"❌ Import Error: {str(e)}")
