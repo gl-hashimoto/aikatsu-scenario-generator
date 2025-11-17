@@ -1,34 +1,45 @@
 import streamlit as st
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-from collections import Counter
-import re
-import os
-import json
-import random
-from anthropic import Anthropic
-from dotenv import load_dotenv
+import sys
+import traceback
 
-# ユーティリティのインポート
-from utils.prompt_library import PromptLibrary
-from utils.scenario_manager import load_scenario_history, save_scenario, delete_scenario
-from modules.article_analysis import render_article_analysis_page
-
-# バージョン情報
-VERSION = "3.3.3"
-VERSION_DATE = "2025-11-17"
-
-# 環境変数読み込み（明示的にパスを指定）
-env_path = os.path.join(os.path.dirname(__file__), '.env')
-load_dotenv(env_path)
-
-# ページ設定
+# ページ設定（最初に実行）
 st.set_page_config(
-    page_title=f"記事ネタ提案ツール v{VERSION}",
+    page_title="記事ネタ提案ツール",
     page_icon="💡",
     layout="wide"
 )
+
+# インポートエラーのデバッグ
+try:
+    import pandas as pd
+    import plotly.express as px
+    import plotly.graph_objects as go
+    from collections import Counter
+    import re
+    import os
+    import json
+    import random
+    from anthropic import Anthropic
+    from dotenv import load_dotenv
+
+    # バージョン情報
+    VERSION = "3.3.4"
+    VERSION_DATE = "2025-11-17"
+
+    # 環境変数読み込み（明示的にパスを指定）
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+    load_dotenv(env_path)
+
+    # ユーティリティのインポート
+    from utils.prompt_library import PromptLibrary
+    from utils.scenario_manager import load_scenario_history, save_scenario, delete_scenario
+    from modules.article_analysis import render_article_analysis_page
+
+except Exception as e:
+    st.error(f"❌ インポートエラーが発生しました")
+    st.code(f"{type(e).__name__}: {str(e)}")
+    st.code(traceback.format_exc())
+    st.stop()
 
 # セッション状態の初期化
 if 'df' not in st.session_state:
