@@ -12,21 +12,14 @@ from dotenv import load_dotenv
 import sys
 import traceback
 
-# デバッグ: インポートエラーをキャッチ
-try:
-    # ユーティリティのインポート
-    sys.path.append(os.path.dirname(__file__))
-    from utils.prompt_library import PromptLibrary
-    from utils.scenario_manager import load_scenario_history, save_scenario, delete_scenario
-    from modules.article_analysis import render_article_analysis_page
-    st.success("✅ All modules imported successfully")
-except Exception as e:
-    st.error(f"❌ Import Error: {str(e)}")
-    st.code(traceback.format_exc())
-    st.stop()
+# ユーティリティのインポート
+sys.path.append(os.path.dirname(__file__))
+from utils.prompt_library import PromptLibrary
+from utils.scenario_manager import load_scenario_history, save_scenario, delete_scenario
+from modules.article_analysis import render_article_analysis_page
 
 # バージョン情報
-VERSION = "3.3.0"
+VERSION = "3.3.1"
 VERSION_DATE = "2025-11-17"
 
 # 環境変数読み込み（明示的にパスを指定）
