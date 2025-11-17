@@ -9,17 +9,14 @@ import json
 import random
 from anthropic import Anthropic
 from dotenv import load_dotenv
-import sys
-import traceback
 
 # ユーティリティのインポート
-sys.path.append(os.path.dirname(__file__))
 from utils.prompt_library import PromptLibrary
 from utils.scenario_manager import load_scenario_history, save_scenario, delete_scenario
 from modules.article_analysis import render_article_analysis_page
 
 # バージョン情報
-VERSION = "3.3.2"
+VERSION = "3.3.3"
 VERSION_DATE = "2025-11-17"
 
 # 環境変数読み込み（明示的にパスを指定）
