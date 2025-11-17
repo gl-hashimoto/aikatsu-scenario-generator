@@ -34,3 +34,9 @@ Thumbs.db
 *.csv
 # ただしサンプルデータは除外しない
 !sample_data.csv
+
+# ユーザーデータ（履歴、ジョブ）
+data/analysis_history.json
+data/jobs.json
+data/neta_elements.json
+data/neta_quick_notes.json

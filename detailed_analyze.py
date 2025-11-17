@@ -51,9 +51,9 @@ def analyze_sheet(file_path, sheet_name, skip_rows=0):
 if __name__ == "__main__":
     # 分析するシート
     analyses = [
-        ("/Users/s-hashimoto/Documents/CURSOR/manga-scenario-generator/愛カツ数字確認シート.xlsx", "LINE記事別（PV,S,PS）", 0),
-        ("/Users/s-hashimoto/Documents/CURSOR/manga-scenario-generator/愛カツ数字確認シート.xlsx", "記事アクセス", 0),
-        ("/Users/s-hashimoto/Documents/CURSOR/manga-scenario-generator/愛カツLINE配信シート(2025_6_16～.xlsx", "LINE配信シート", 0),
+        ("/Users/s-hashimoto/Documents/CURSOR/#biz_制作ツール/8502_記事ネタ提案ツール/愛カツ数字確認シート.xlsx", "LINE記事別（PV,S,PS）", 0),
+        ("/Users/s-hashimoto/Documents/CURSOR/#biz_制作ツール/8502_記事ネタ提案ツール/愛カツ数字確認シート.xlsx", "記事アクセス", 0),
+        ("/Users/s-hashimoto/Documents/CURSOR/#biz_制作ツール/8502_記事ネタ提案ツール/愛カツLINE配信シート(2025_6_16～.xlsx", "LINE配信シート", 0),
     ]
 
     for file_path, sheet_name, skip_rows in analyses:

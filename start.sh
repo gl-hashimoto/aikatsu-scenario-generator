@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# 漫画シナリオ生成AI 起動スクリプト
+# 記事ネタ提案ツール 起動スクリプト
 
-echo "🚀 漫画シナリオ生成AI を起動中..."
+echo "🚀 記事ネタ提案ツールを起動中..."
 
 # 仮想環境のパス
-VENV_PATH="../.venv"
+VENV_PATH=".venv"
 
 # 仮想環境をアクティベート
 if [ -d "$VENV_PATH" ]; then
@@ -16,10 +16,12 @@ else
     exit 1
 fi
 
-# Streamlitアプリを起動
+# Streamlitアプリを起動（ポート8502を明示的に指定）
 echo "📖 アプリを起動します..."
+echo "ポート: 8502"
+echo "URL: http://localhost:8502"
 echo "ブラウザが自動的に開きます"
 echo "終了するには Ctrl+C を押してください"
 echo ""
 
-streamlit run app.py
+STREAMLIT_SERVER_HEADLESS=true python3 -m streamlit run app.py --server.port 8502

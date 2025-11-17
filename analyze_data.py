@@ -34,8 +34,8 @@ def analyze_excel(file_path):
 
 if __name__ == "__main__":
     files = [
-        "/Users/s-hashimoto/Documents/CURSOR/manga-scenario-generator/愛カツ数字確認シート.xlsx",
-        "/Users/s-hashimoto/Documents/CURSOR/manga-scenario-generator/愛カツLINE配信シート(2025_6_16～.xlsx"
+        "/Users/s-hashimoto/Documents/CURSOR/#biz_制作ツール/8502_記事ネタ提案ツール/愛カツ数字確認シート.xlsx",
+        "/Users/s-hashimoto/Documents/CURSOR/#biz_制作ツール/8502_記事ネタ提案ツール/愛カツLINE配信シート(2025_6_16～.xlsx"
     ]
 
     for file_path in files:

@@ -82,16 +82,19 @@ pip install -r requirements.txt
 
 **方法A: アプリ内で設定（簡単）**
 ```bash
-streamlit run app.py
+streamlit run app.py --server.port 8502
 ```
+→ ブラウザで `http://localhost:8502` が開きます
 → 「⚙️ 設定」ページでAPI Keyを入力
 
 **方法B: secrets.tomlで設定**
 ```bash
 cp .streamlit/secrets.toml.example .streamlit/secrets.toml
 # secrets.tomlを編集してAPI Keyを設定
-streamlit run app.py
+streamlit run app.py --server.port 8502
 ```
+
+**注意**: このツールはポート8502を使用します（他のツールと重複しないため）。
 
 ## 🛠 Streamlit Cloudへのデプロイ
 

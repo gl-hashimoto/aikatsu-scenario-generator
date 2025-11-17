@@ -79,9 +79,6 @@ def delete_analysis(analysis_id):
 def render_article_analysis_page(api_key):
     """記事ネタ提案ページを表示"""
 
-    st.header("💡 記事ネタ提案")
-    st.write("ヒット記事を分析して、新しいテーマのアイデアを生み出します。")
-
     # APIキーのトリム処理（余分な空白や改行を削除）
     if api_key:
         api_key = api_key.strip()
@@ -122,7 +119,7 @@ def render_article_analysis_page(api_key):
             if st.button("🔄 状態を更新"):
                 st.rerun()
 
-            st.caption("💡 ページを離れても処理は継続されます。完了すると自動的に「完了したジョブ」に表示されます。")
+            st.caption("💡 ページを離れても処理は継続されます。完了すると自動的に「保存済みの記事ネタ提案」に保存されます。")
 
     # 失敗したジョブを表示
     all_jobs = job_manager.load_jobs()
@@ -146,50 +143,6 @@ def render_article_analysis_page(api_key):
                     st.rerun()
 
                 st.markdown("---")
-
-    # 完了したジョブを表示
-    completed_jobs = job_manager.get_completed_jobs()
-    completed_analysis_jobs = [j for j in completed_jobs if j['type'] == 'analysis']
-
-    if completed_analysis_jobs:
-        with st.expander(f"✅ 完了したジョブ ({len(completed_analysis_jobs)}件)", expanded=True):
-            for idx, job in enumerate(completed_analysis_jobs, 1):
-                result = job.get('result', {})
-
-                st.markdown(f"### 📄 #{idx} {job['title']}")
-                st.caption(f"完了: {datetime.datetime.fromisoformat(job['completed_at']).strftime('%Y/%m/%d %H:%M')}")
-
-                # テーマを表示
-                if result.get('themes'):
-                    st.markdown("#### 💡 生成されたテーマ（6個）")
-                    st.markdown(result['themes'])
-
-                    # 自動保存済みメッセージ
-                    st.success("✅ 自動的に履歴に保存されました")
-
-                    # ボタン
-                    col1, col2 = st.columns([3, 1])
-
-                    with col1:
-                        st.download_button(
-                            label="📥 テーマをダウンロード",
-                            data=result['themes'],
-                            file_name=f"themes_{job['id']}.md",
-                            mime="text/markdown",
-                            key=f"download_{job['id']}",
-                            use_container_width=True
-                        )
-
-                    with col2:
-                        if st.button("🗑️", key=f"delete_completed_{job['id']}", help="削除", use_container_width=True):
-                            job_manager.delete_job(job['id'])
-                            st.rerun()
-                else:
-                    st.warning("テーマ生成中にエラーが発生した可能性があります")
-
-                st.markdown("---")
-
-    st.markdown("---")
 
     # ========== 記事入力フォーム ==========
     st.subheader("📝 ヒット記事を入力")
@@ -300,8 +253,8 @@ def render_article_analysis_page(api_key):
             summary_short = analysis['summary'][:20] + "..." if len(analysis['summary']) > 20 else analysis['summary']
             created_at = datetime.datetime.fromisoformat(analysis['created_at'])
 
-            # コンパクトな行表示
-            col1, col2, col3 = st.columns([0.1, 6, 1])
+            # コンパクトな行表示（横一列）
+            col1, col2, col3, col4 = st.columns([0.1, 5, 2, 0.5])
 
             with col1:
                 # アイコン
@@ -317,10 +270,11 @@ def render_article_analysis_page(api_key):
                     st.session_state.selected_analysis_id = analysis['id']
                     st.rerun()
 
-                # 日時を小さく表示
+            with col3:
+                # 日時を表示（横並び）
                 st.caption(f"📅 {created_at.strftime('%Y/%m/%d %H:%M')}")
 
-            with col3:
+            with col4:
                 # 削除ボタン
                 if st.button("🗑️", key=f"delete_{analysis['id']}", help="削除"):
                     try:
@@ -373,20 +327,12 @@ def render_article_analysis_page(api_key):
                 with st.expander("📝 記事内容", expanded=True):
                     st.markdown(selected_analysis['content'])
 
-                # 分析結果をタブで表示
-                detail_tab1, detail_tab2, detail_tab3 = st.tabs(["📊 基本分析", "🔬 深堀り分析", "💡 生成テーマ"])
-
-                with detail_tab1:
-                    st.markdown(selected_analysis['basic_analysis'])
-
-                with detail_tab2:
-                    st.markdown(selected_analysis['deep_analysis'])
-
-                with detail_tab3:
-                    if selected_analysis.get('themes'):
-                        st.markdown(selected_analysis['themes'])
-                    else:
-                        st.info("テーマは生成されていません")
+                # 生成テーマを表示
+                st.markdown("### 💡 生成テーマ")
+                if selected_analysis.get('themes'):
+                    st.markdown(selected_analysis['themes'])
+                else:
+                    st.info("テーマは生成されていません")
 
                 # ダウンロードボタン
                 st.markdown("---")
@@ -397,18 +343,6 @@ def render_article_analysis_page(api_key):
 ## 記事内容
 
 {selected_analysis['content']}
-
----
-
-## 基本分析
-
-{selected_analysis['basic_analysis']}
-
----
-
-## 深堀り分析
-
-{selected_analysis['deep_analysis']}
 
 ---
 

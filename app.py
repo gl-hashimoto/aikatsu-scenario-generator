@@ -18,8 +18,8 @@ from utils.scenario_manager import load_scenario_history, save_scenario, delete_
 from pages.article_analysis import render_article_analysis_page
 
 # バージョン情報
-VERSION = "3.2.2"
-VERSION_DATE = "2025-11-14"
+VERSION = "3.3.0"
+VERSION_DATE = "2025-11-17"
 
 # 環境変数読み込み（明示的にパスを指定）
 env_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -47,6 +47,20 @@ st.markdown("---")
 
 # サイドバー
 with st.sidebar:
+    # プロジェクト識別情報（大きく表示）
+    st.markdown("""
+    <div style="background-color: #FFE5E5; padding: 1rem; border-radius: 10px; margin-bottom: 1rem; border: 2px solid #FF6B6B;">
+        <h3 style="color: #FF0000; margin: 0; text-align: center;">⚠️ プロジェクト識別</h3>
+        <p style="color: #333; margin: 0.5rem 0; text-align: center; font-weight: bold; font-size: 1.1rem;">
+            📝 記事ネタ提案ツール<br>
+            🔌 ポート: <span style="color: #FF0000; font-size: 1.3rem;">8502</span>
+        </p>
+        <p style="color: #666; margin: 0; text-align: center; font-size: 0.85rem;">
+            ディレクトリ: 8502_記事ネタ提案ツール
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
     st.header("メニュー")
     page = st.radio(
         "選択してください",
