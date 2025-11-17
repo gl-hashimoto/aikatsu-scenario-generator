@@ -1,0 +1,6 @@
+# ローカル開発用の設定ファイル例
+# 使い方: このファイルを config.toml にコピーして使用してください
+# cp .streamlit/config.toml.example .streamlit/config.toml
+
+[server]
+port = 8502

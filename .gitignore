@@ -26,8 +26,9 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Streamlit（secrets.tomlのみ除外、config.tomlはコミット）
+# Streamlit（ローカル用設定は除外）
 .streamlit/secrets.toml
+.streamlit/config.toml
 
 # データファイル（必要に応じて）
 *.xlsx
