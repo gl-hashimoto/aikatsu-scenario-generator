@@ -27,6 +27,8 @@ def load_analysis_history():
 def save_analysis_history(data):
     """分析履歴を保存する"""
     data['last_updated'] = datetime.datetime.now().strftime("%Y-%m-%d")
+    # ディレクトリが存在しない場合は作成
+    os.makedirs(os.path.dirname(ANALYSIS_HISTORY_PATH), exist_ok=True)
     with open(ANALYSIS_HISTORY_PATH, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
