@@ -10,12 +10,20 @@ import random
 from anthropic import Anthropic
 from dotenv import load_dotenv
 import sys
+import traceback
 
-# ユーティリティのインポート
-sys.path.append(os.path.dirname(__file__))
-from utils.prompt_library import PromptLibrary
-from utils.scenario_manager import load_scenario_history, save_scenario, delete_scenario
-from pages.article_analysis import render_article_analysis_page
+# デバッグ: インポートエラーをキャッチ
+try:
+    # ユーティリティのインポート
+    sys.path.append(os.path.dirname(__file__))
+    from utils.prompt_library import PromptLibrary
+    from utils.scenario_manager import load_scenario_history, save_scenario, delete_scenario
+    from pages.article_analysis import render_article_analysis_page
+    st.success("✅ All modules imported successfully")
+except Exception as e:
+    st.error(f"❌ Import Error: {str(e)}")
+    st.code(traceback.format_exc())
+    st.stop()
 
 # バージョン情報
 VERSION = "3.3.0"
